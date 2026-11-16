@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tu Primer Plan Financiero | Dashboard 50/30/20</title>
+    <!-- Google Fonts & Tailwind CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                    colors: {
+                        mint: '#E8F5E9',
+                        lila: '#F3E5F5',
+                        forest: '#2E7D32',
+                        coral: '#FF7043',
+                        darkText: '#263238'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-darkText font-sans min-h-screen pb-12">
+
+    <!-- BARRA SUPERIOR: CONFIGURACIÓN Y RESPALDOS -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-2">
+                <span class="bg-forest text-white p-2 rounded-xl font-bold text-lg">💰</span>
+                <div>
+                    <h1 class="font-bold text-lg text-forest leading-tight">Mi Plan Financiero</h1>
+                    <p class="text-xs text-gray-500">Dashboard Interactivo 50/30/20</p>
+                </div>
+            </div>
+
+            <!-- Controles de Moneda, Tasa y Respaldo -->
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center space-x-1 bg-gray-100 px-3 py-1.5 rounded-lg text-sm">
+                    <span class="text-xs font-semibold text-gray-600">Moneda:</span>
+                    <select id="currencySelect" onchange="changeCurrency()" class="bg-transparent font-bold text-forest focus:outline-none cursor-pointer">
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="ARS">ARS ($)</option>
+                        <option value="BOB">BOB (Bs.)</option>
+                        <option value="BRL">BRL (R$)</option>
+                        <option value="CLP">CLP ($)</option>
+                        <option value="COP">COP ($)</option>
+                        <option value="CRC">CRC (₡)</option>
+                        <option value="CUP">CUP ($)</option>
+                        <option value="DOP">DOP ($)</option>
+                        <option value="GTQ">GTQ (Q)</option>
+                        <option value="HNL">HNL (L)</option>
+                        <option value="MXN">MXN ($)</option>
+                        <option value="NIO">NIO (C$)</option>
+                        <option value="PAB">PAB (B/.)</option>
+                        <option value="PYG">PYG (₲)</option>
+                        <option value="PEN">PEN (S/)</option>
+                        <option value="UYU">UYU ($)</option>
+                        <option value="VES" selected>VES (Bs.)</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center space-x-1 bg-gray-100 px-3 py-1.5 rounded-lg text-sm">
+                    <span class="text-xs font-semibold text-gray-600">1 USD =</span>
+                    <input type="number" id="currentRate" value="36.5" onchange="updateCalculations()" class="w-16 bg-transparent font-bold text-forest focus:outline-none text-right">
+                </div>
+
+                <!-- Botones de Respaldo y PDF -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="exportBackup()" title="Exportar Respaldo JSON" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition">💾 Exportar</button>
+                    <label title="Importar Respaldo JSON" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer">
+                        📂 Importar <input type="file" id="importFile" accept=".json" onchange="importBackup(event)" class="hidden">
+                    </label>
+                    <button onclick="window.print()" class="bg-forest hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">🖨️ Descargar PDF</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- PESTAÑAS DE NAVEGACIÓN -->
+    <nav class="max-w-6xl mx-auto px-4 mt-4">
+        <div class="flex space-x-2 border-b border-gray-200 overflow-x-auto">
+            <button onclick="switchTab('presupuesto')" id="tab-presupuesto" class="tab-btn px-4 py-2 font-bold text-sm border-b-2 border-forest text-forest whitespace-nowrap">📊 Presupuesto Mensual</button>
+            <button onclick="switchTab('metas')" id="tab-metas" class="tab-btn px-4 py-2 font-semibold text-sm border-b-2 border-transparent text-gray-500 hover:text-forest whitespace-nowrap">🎯 Metas & Retos</button>
+            <button onclick="switchTab('historial')" id="tab-historial" class="tab-btn px-4 py-2 font-semibold text-sm border-b-2 border-transparent text-gray-500 hover:text-forest whitespace-nowrap">📈 Historial y Crecimiento</button>
+            <button onclick="switchTab('guia')" id="tab-guia" class="tab-btn px-4 py-2 font-semibold text-sm border-b-2 border-transparent text-gray-500 hover:text-forest whitespace-nowrap">📖 Guía Rápida 50/30/20</button>
+        </div>
+    </nav>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="max-w-6xl mx-auto px-4 mt-6">
+
+        <!-- ================= VISTA 1: PRESUPUESTO MENSUAL ================= -->
+        <div id="view-presupuesto" class="space-y-6">
+            
+            <!-- Encabezado del Mes y Meta -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <label class="font-bold text-sm text-gray-600">Mes:</label>
+                    <input type="text" id="mesActual" value="Octubre 2026" class="border-b-2 border-forest font-bold text-forest px-2 py-1 focus:outline-none">
+                </div>
+                <div class="flex-1 max-w-lg flex items-center space-x-3">
+                    <label class="font-bold text-sm text-gray-600">Meta principal:</label>
+                    <input type="text" id="metaPrincipal" value="Ahorrar para mi fondo de emergencia" class="flex-1 border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-forest">
+                </div>
+                <button onclick="cerrarMesEnHistorial()" class="bg-coral hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">🔒 Cerrar y Guardar Mes en Historial</button>
+            </div>
+
+            <!-- BLOQUE 1: CALCULADORA 50/30/20 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+                    <span class="text-xs font-semibold text-gray-500 uppercase">Ingreso Total del Mes</span>
+                    <div class="flex items-center mt-2">
+                        <span id="currencySymbol1" class="text-xl font-bold text-forest mr-1">$</span>
+                        <input type="number" id="ingresoTotal" value="500" oninput="updateCalculations()" class="w-full text-2xl font-extrabold text-forest focus:outline-none bg-mint/30 p-1 rounded-lg">
+                    </div>
+                    <span class="text-[10px] text-gray-400 mt-1">Base para calcular tu regla</span>
+                </div>
+
+                <div class="bg-mint/40 p-4 rounded-2xl shadow-sm border border-emerald-100">
+                    <div class="flex justify-between items-center"><span class="text-xs font-bold text-forest uppercase">50% Necesidades</span><span class="text-xs font-bold bg-white px-2 py-0.5 rounded-full text-forest">Ideal</span></div>
+                    <div class="text-2xl font-extrabold text-forest mt-2" id="valNecesidades">$250.00</div>
+                    <div class="text-xs text-gray-600 mt-1">Real: <span id="realNecesidades" class="font-bold">$0</span> (<span id="pctNecesidades">0%</span>)</div>
+                    <div id="alertaFijos" class="hidden mt-2 text-[11px] bg-coral/20 text-coral font-bold p-1 rounded">⚠️ Supera el 50% recomendado</div>
+                </div>
+
+                <div class="bg-lila/40 p-4 rounded-2xl shadow-sm border border-purple-100">
+                    <div class="flex justify-between items-center"><span class="text-xs font-bold text-purple-800 uppercase">30% Deseos</span><span class="text-xs font-bold bg-white px-2 py-0.5 rounded-full text-purple-800">Ideal</span></div>
+                    <div class="text-2xl font-extrabold text-purple-900 mt-2" id="valDeseos">$150.00</div>
+                    <div class="text-xs text-gray-600 mt-1">Real: <span id="realDeseos" class="font-bold">$0</span> (<span id="pctDeseos">0%</span>)</div>
+                    <div id="alertaVariables" class="hidden mt-2 text-[11px] bg-coral/20 text-coral font-bold p-1 rounded">⚠️ Supera el 30% recomendado</div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center"><span class="text-xs font-bold text-gray-500 uppercase">20% Ahorro</span><span class="text-xs font-bold bg-emerald-100 text-forest px-2 py-0.5 rounded-full">Meta</span></div>
+                        <div class="text-2xl font-extrabold text-forest mt-2" id="valAhorro">$100.00</div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-2">Aporte real: <span id="realAhorro" class="font-bold text-forest">$0</span></div>
+                </div>
+            </div>
+
+            <!-- BLOQUE 2: REGISTRO DE INGRESOS -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-base text-forest">📥 Registro de Ingresos</h3>
+                    <button onclick="addRow('tablaIngresos')" class="text-xs bg-forest text-white px-3 py-1 rounded-lg font-semibold">+ Agregar Ingreso</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="tablaIngresos" class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="border-b text-gray-500 text-xs uppercase">
+                                <th class="py-2 px-2">Fecha</th>
+                                <th class="py-2 px-2">Fuente (Sueldo, Mesada, Freelance)</th>
+                                <th class="py-2 px-2">Estimado</th>
+                                <th class="py-2 px-2">Real</th>
+                                <th class="py-2 px-2 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr>
+                                <td class="py-2 px-2"><input type="text" value="01/10" class="w-20 border rounded px-1 py-0.5 text-xs"></td>
+                                <td class="py-2 px-2"><input type="text" value="Sueldo Principal" class="w-full border rounded px-1 py-0.5 text-xs"></td>
+                                <td class="py-2 px-2"><input type="number" value="400" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs estimado-ingreso"></td>
+                                <td class="py-2 px-2"><input type="number" value="400" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs real-ingreso"></td>
+                                <td class="py-2 px-2 text-center"><button onclick="deleteRow(this)" class="text-red-500 hover:text-red-700 text-xs">❌</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- BLOQUE 3: GASTOS FIJOS (Tus 50%) -->
+            <div class="bg-mint/20 p-5 rounded-2xl shadow-sm border border-emerald-100">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-base text-forest">🏠 Gastos Fijos - 50% (Necesidades)</h3>
+                    <button onclick="addRow('tablaFijos')" class="text-xs bg-forest text-white px-3 py-1 rounded-lg font-semibold">+ Agregar Gasto Fijo</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="tablaFijos" class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="border-b border-emerald-200 text-gray-600 text-xs uppercase">
+                                <th class="py-2 px-2">Concepto</th>
+                                <th class="py-2 px-2">Fecha</th>
+                                <th class="py-2 px-2">Presupuestado</th>
+                                <th class="py-2 px-2">Gasto Real</th>
+                                <th class="py-2 px-2 text-center">Pagado</th>
+                                <th class="py-2 px-2 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-emerald-100">
+                            <tr>
+                                <td class="py-2 px-2"><input type="text" value="Alimentación / Super" class="w-full border rounded px-1 py-0.5 text-xs"></td>
+                                <td class="py-2 px-2"><input type="text" value="05/10" class="w-20 border rounded px-1 py-0.5 text-xs"></td>
+                                <td class="py-2 px-2"><input type="number" value="150" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs pres-fijo"></td>
+                                <td class="py-2 px-2"><input type="number" value="140" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs real-fijo"></td>
+                                <td class="py-2 px-2 text-center"><input type="checkbox" checked class="w-4 h-4 text-forest rounded accent-forest"></td>
+                                <td class="py-2 px-2 text-center"><button onclick="deleteRow(this)" class="text-red-500 text-xs">❌</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- BLOQUE 4: GASTOS VARIABLES (Tus 30%) -->
+            <div class="bg-lila/20 p-5 rounded-2xl shadow-sm border border-purple-100">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-base text-purple-900">✨ Gastos Variables - 30% (Deseos)</h3>
+                    <button onclick="addRow('tablaVariables')" class="text-xs bg-purple-800 text-white px-3 py-1 rounded-lg font-semibold">+ Agregar Gasto Variable</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="tablaVariables" class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="border-b border-purple-200 text-gray-600 text-xs uppercase">
+                                <th class="py-2 px-2">Concepto</th>
+                                <th class="py-2 px-2">Presupuestado</th>
+                                <th class="py-2 px-2">Gasto Real</th>
+                                <th class="py-2 px-2">Diferencia</th>
+                                <th class="py-2 px-2 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-purple-100">
+                            <tr>
+                                <td class="py-2 px-2"><input type="text" value="Salidas con amigos / Streaming" class="w-full border rounded px-1 py-0.5 text-xs"></td>
+                                <td class="py-2 px-2"><input type="number" value="80" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs pres-var"></td>
+                                <td class="py-2 px-2"><input type="number" value="75" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs real-var"></td>
+                                <td class="py-2 px-2 font-bold text-emerald-600 diff-var">+$5</td>
+                                <td class="py-2 px-2 text-center"><button onclick="deleteRow(this)" class="text-red-500 text-xs">❌</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- BLOQUE 6: RESUMEN FINAL DEL MES -->
+            <div class="bg-darkText text-white p-6 rounded-2xl shadow-lg grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                <div class="text-center md:text-left">
+                    <span class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Total Ingresos</span>
+                    <div id="sumIngresos" class="text-3xl font-extrabold text-mint mt-1">$400.00</div>
+                </div>
+                <div class="text-center md:text-left">
+                    <span class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Total Gastos (Fijos + Variables)</span>
+                    <div id="sumGastos" class="text-3xl font-extrabold text-coral mt-1">$215.00</div>
+                </div>
+                <div class="bg-white/10 p-4 rounded-xl text-center">
+                    <span class="text-xs text-gray-300 uppercase tracking-wider font-semibold">Balance Final</span>
+                    <div id="sumBalance" class="text-3xl font-extrabold text-emerald-400 mt-1">+$185.00</div>
+                    <p class="text-[11px] text-gray-300 mt-1">"¡Si es positivo, envíalo directo a tu ahorro!"</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= VISTA 2: METAS Y RETOS ================= -->
+        <div id="view-metas" class="hidden space-y-6">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-base text-forest">🎯 Mis Metas de Ahorro (20%)</h3>
+                    <button onclick="addMetaRow()" class="text-xs bg-forest text-white px-3 py-1 rounded-lg font-semibold">+ Nueva Meta</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="tablaMetas" class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="border-b text-gray-500 text-xs uppercase">
+                                <th class="py-2 px-2">Meta (Ej. Fondo de emergencia, Laptop)</th>
+                                <th class="py-2 px-2">Meta Total ($)</th>
+                                <th class="py-2 px-2">Aportado ($)</th>
+                                <th class="py-2 px-2">Progreso Automático (10 bloques)</th>
+                                <th class="py-2 px-2 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr>
+                                <td class="py-2 px-2"><input type="text" value="Fondo de Emergencia" class="w-full border rounded px-1 py-0.5 text-xs"></td>
+                                <td class="py-2 px-2"><input type="number" value="500" oninput="updateMetaProgress()" class="w-24 border rounded px-1 py-0.5 text-xs meta-total"></td>
+                                <td class="py-2 px-2"><input type="number" value="200" oninput="updateMetaProgress()" class="w-24 border rounded px-1 py-0.5 text-xs meta-aportado"></td>
+                                <td class="py-2 px-2">
+                                    <div class="flex space-x-1 progress-bars-container">
+                                        <div class="w-5 h-4 rounded bg-forest"></div>
+                                        <div class="w-5 h-4 rounded bg-forest"></div>
+                                        <div class="w-5 h-4 rounded bg-gray-200"></div>
+                                        <div class="w-5 h-4 rounded bg-gray-200"></div>
+                                        <div class="w-5 h-4 rounded bg-gray-200"></div>
+                                        <div class="w-5 h-4 rounded bg-gray-200"></div>
+                                        <div class="w-5 h-4 rounded bg-gray-200"></div>
+                                        <div class="w-5 h-4 rounded bg-gray-200"></div>
+                                        <div class="w-5 h-4 rounded bg-gray-200"></div>
+                                        <div class="w-5 h-4 rounded bg-gray-200"></div>
+                                    </div>
+                                    <span class="text-[10px] text-gray-500 font-bold progreso-texto">40% completado</span>
+                                </td>
+                                <td class="py-2 px-2 text-center"><button onclick="deleteRow(this)" class="text-red-500 text-xs">❌</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- DETECTOR DE SUSCRIPCIONES -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-base text-forest mb-3">📱 Detector de Suscripciones y Gastos Hormiga</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-xl border">
+                        <span class="text-xs font-bold text-gray-600">Streaming / Apps (Netflix, Spotify, etc.)</span>
+                        <input type="number" value="15" oninput="updateSuscripciones()" class="w-full mt-2 border rounded p-1 text-sm sub-input" placeholder="Monto mensual">
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl border">
+                        <span class="text-xs font-bold text-gray-600">Café / Comidas fuera de casa</span>
+                        <input type="number" value="30" oninput="updateSuscripciones()" class="w-full mt-2 border rounded p-1 text-sm sub-input" placeholder="Monto mensual">
+                    </div>
+                    <div class="bg-mint/40 p-4 rounded-xl border border-emerald-200 flex flex-col justify-between">
+                        <span class="text-xs font-bold text-forest">Gasto Anual Estimado en esto:</span>
+                        <div id="totalAnualSub" class="text-2xl font-extrabold text-forest">$540.00</div>
+                        <span class="text-[10px] text-gray-600">¡Imagina lo que harías ahorrando esto!</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VISTA 3: HISTORIAL Y CRECIMIENTO ================= -->
+        <div id="view-historial" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <div>
+                        <h3 class="font-bold text-lg text-forest">📈 Historial y Crecimiento de Ahorro</h3>
+                        <p class="text-xs text-gray-500">Compara tus últimos meses con control de poder adquisitivo y tasas históricas.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-semibold text-gray-600">Ver Gráficos en:</span>
+                        <button onclick="toggleGraphMode('nominal')" id="btnNominal" class="px-3 py-1 rounded-lg text-xs font-bold bg-forest text-white">Moneda Local</button>
+                        <button onclick="toggleGraphMode('real')" id="btnReal" class="px-3 py-1 rounded-lg text-xs font-bold bg-gray-200 text-gray-700">Valor Real (USD)</button>
+                        <button onclick="addHistorialRow()" class="ml-2 bg-coral text-white px-3 py-1 rounded-lg text-xs font-bold">+ Agregar Mes Anterior</button>
+                    </div>
+                </div>
+
+                <!-- KPIs Superiores de Historial -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-mint/40 p-4 rounded-xl border border-emerald-100">
+                        <span class="text-xs font-bold text-forest uppercase">Ahorro Acumulado</span>
+                        <div id="kpiAhorroTotal" class="text-2xl font-extrabold text-forest mt-1">$0</div>
+                        <span class="text-[10px] text-gray-600">Suma total guardada</span>
+                    </div>
+                    <div class="bg-lila/40 p-4 rounded-xl border border-purple-100">
+                        <span class="text-xs font-bold text-purple-900 uppercase">Valor Real (USD)</span>
+                        <div id="kpiValReal" class="text-2xl font-extrabold text-purple-900 mt-1">$0</div>
+                        <span id="kpiPoderAdquisitivo" class="text-[10px] text-emerald-700 font-bold">Protegido frente a devaluación</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border shadow-sm">
+                        <span class="text-xs font-bold text-gray-500 uppercase">Crecimiento Neto</span>
+                        <div id="kpiCrecimiento" class="text-2xl font-extrabold text-forest mt-1">0%</div>
+                        <span class="text-[10px] text-gray-500">Entre 1er y último mes</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border shadow-sm">
+                        <span class="text-xs font-bold text-gray-500 uppercase">Promedio Mensual</span>
+                        <div id="kpiPromedio" class="text-2xl font-extrabold text-forest mt-1">$0</div>
+                        <span class="text-[10px] text-gray-500">Ahorro promedio por mes</span>
+                    </div>
+                </div>
+
+                <!-- Tabla de Historial Editable -->
+                <div class="overflow-x-auto mb-6">
+                    <table id="tablaHistorial" class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="border-b text-gray-500 text-xs uppercase">
+                                <th class="py-2 px-2">Mes</th>
+                                <th class="py-2 px-2">Ingresos</th>
+                                <th class="py-2 px-2">Gastos Totales</th>
+                                <th class="py-2 px-2">Ahorro del Mes</th>
+                                <th class="py-2 px-2">Tasa Congelada (1 USD =)</th>
+                                <th class="py-2 px-2">Valor Real Protegido (USD)</th>
+                                <th class="py-2 px-2 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100" id="tbodyHistorial">
+                            <!-- Ejemplo precargado de 3 meses -->
+                            <tr>
+                                <td class="py-2 px-2"><input type="text" value="Agosto 2026" class="w-28 border rounded px-1 py-0.5 text-xs h-mes"></td>
+                                <td class="py-2 px-2"><input type="number" value="450" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-ing"></td>
+                                <td class="py-2 px-2"><input type="number" value="380" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-gas"></td>
+                                <td class="py-2 px-2"><input type="number" value="70" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-aho"></td>
+                                <td class="py-2 px-2"><input type="number" value="35.0" oninput="updateHistorialKPIs()" class="w-20 border rounded px-1 py-0.5 text-xs h-tasa"></td>
+                                <td class="py-2 px-2 font-bold text-forest h-valusd">$2.00</td>
+                                <td class="py-2 px-2 text-center"><button onclick="deleteRow(this); updateHistorialKPIs();" class="text-red-500 text-xs">❌</button></td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-2"><input type="text" value="Septiembre 2026" class="w-28 border rounded px-1 py-0.5 text-xs h-mes"></td>
+                                <td class="py-2 px-2"><input type="number" value="500" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-ing"></td>
+                                <td class="py-2 px-2"><input type="number" value="400" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-gas"></td>
+                                <td class="py-2 px-2"><input type="number" value="100" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-aho"></td>
+                                <td class="py-2 px-2"><input type="number" value="36.0" oninput="updateHistorialKPIs()" class="w-20 border rounded px-1 py-0.5 text-xs h-tasa"></td>
+                                <td class="py-2 px-2 font-bold text-forest h-valusd">$2.77</td>
+                                <td class="py-2 px-2 text-center"><button onclick="deleteRow(this); updateHistorialKPIs();" class="text-red-500 text-xs">❌</button></td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-2"><input type="text" value="Octubre 2026" class="w-28 border rounded px-1 py-0.5 text-xs h-mes"></td>
+                                <td class="py-2 px-2"><input type="number" value="550" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-ing"></td>
+                                <td class="py-2 px-2"><input type="number" value="420" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-gas"></td>
+                                <td class="py-2 px-2"><input type="number" value="130" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-aho"></td>
+                                <td class="py-2 px-2"><input type="number" value="36.5" oninput="updateHistorialKPIs()" class="w-20 border rounded px-1 py-0.5 text-xs h-tasa"></td>
+                                <td class="py-2 px-2 font-bold text-forest h-valusd">$3.56</td>
+                                <td class="py-2 px-2 text-center"><button onclick="deleteRow(this); updateHistorialKPIs();" class="text-red-500 text-xs">❌</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Gráfico Visual SVG de Crecimiento -->
+                <div class="bg-gray-50 p-4 rounded-xl border">
+                    <h4 class="font-bold text-sm text-gray-700 mb-3">📊 Curva de Crecimiento de Ahorro Acumulado</h4>
+                    <div id="svgContainer" class="w-full h-40 flex items-end space-x-4 px-4 pb-2 border-b border-gray-300">
+                        <!-- Generado dinámicamente por JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VISTA 4: GUÍA RÁPIDA ================= -->
+        <div id="view-guia" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                <h3 class="font-extrabold text-xl text-forest">📖 Tu Primer Plan Financiero: Guía de Inicio Rápido</h3>
+                <p class="text-sm text-gray-600">Organizar tus finanzas desde joven no se trata de restringirte, sino de saber exactamente a dónde va tu dinero para cumplir tus metas sin estrés.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                    <div class="bg-mint/40 p-4 rounded-xl border border-emerald-100">
+                        <h4 class="font-bold text-forest text-sm">50% Necesidades</h4>
+                        <p class="text-xs text-gray-600 mt-1">Gastos fijos indispensables para vivir y estudiar: comida, transporte, servicios, alquiler o aportes en casa.</p>
+                    </div>
+                    <div class="bg-lila/40 p-4 rounded-xl border border-purple-100">
+                        <h4 class="font-bold text-purple-900 text-sm">30% Deseos</h4>
+                        <p class="text-xs text-gray-600 mt-1">Estilo de vida y gustos: salidas con amigos, ropa nueva, plataformas de streaming y antojos.</p>
+                    </div>
+                    <div class="bg-gray-100 p-4 rounded-xl border border-gray-200">
+                        <h4 class="font-bold text-gray-800 text-sm">20% Ahorro y Metas</h4>
+                        <p class="text-xs text-gray-600 mt-1">Construye tu libertad: fondo de emergencia, laptop nueva, cursos o proyectos futuros.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- SCRIPT JAVASCRIPT INTERACTIVO -->
+    <script>
+        let graphMode = 'nominal';
+
+        function switchTab(tabId) {
+            ['presupuesto', 'metas', 'historial', 'guia'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('border-forest', 'text-forest');
+                document.getElementById(`tab-${t}`).classList.add('border-transparent', 'text-gray-500');
+            });
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).classList.add('border-forest', 'text-forest');
+            document.getElementById(`tab-${tabId}`).classList.remove('border-transparent', 'text-gray-500');
+            if(tabId === 'historial') updateHistorialKPIs();
+        }
+
+        const symbols = { USD: '$', EUR: '€', ARS: '$', BOB: 'Bs.', BRL: 'R$', CLP: '$', COP: '$', CRC: '₡', CUP: '$', DOP: '$', GTQ: 'Q', HNL: 'L', MXN: '$', NIO: 'C$', PAB: 'B/.', PYG: '₲', PEN: 'S/', UYU: '$', VES: 'Bs.' };
+
+        function changeCurrency() {
+            const curr = document.getElementById('currencySelect').value;
+            const sym = symbols[curr] || '$';
+            document.getElementById('currencySymbol1').innerText = sym;
+            updateCalculations();
+        }
+
+        function addRow(tableId) {
+            const tbody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+            const row = tbody.insertRow();
+            if(tableId === 'tablaIngresos') {
+                row.innerHTML = `<td class="py-2 px-2"><input type="text" value="Fecha" class="w-20 border rounded px-1 py-0.5 text-xs"></td><td class="py-2 px-2"><input type="text" value="Nueva Fuente" class="w-full border rounded px-1 py-0.5 text-xs"></td><td class="py-2 px-2"><input type="number" value="0" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs estimado-ingreso"></td><td class="py-2 px-2"><input type="number" value="0" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs real-ingreso"></td><td class="py-2 px-2 text-center"><button onclick="deleteRow(this)" class="text-red-500 text-xs">❌</button></td>`;
+            } else if(tableId === 'tablaFijos') {
+                row.innerHTML = `<td class="py-2 px-2"><input type="text" value="Nuevo Gasto" class="w-full border rounded px-1 py-0.5 text-xs"></td><td class="py-2 px-2"><input type="text" value="Fecha" class="w-20 border rounded px-1 py-0.5 text-xs"></td><td class="py-2 px-2"><input type="number" value="0" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs pres-fijo"></td><td class="py-2 px-2"><input type="number" value="0" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs real-fijo"></td><td class="py-2 px-2 text-center"><input type="checkbox" class="w-4 h-4 text-forest rounded accent-forest"></td><td class="py-2 px-2 text-center"><button onclick="deleteRow(this)" class="text-red-500 text-xs">❌</button></td>`;
+            } else if(tableId === 'tablaVariables') {
+                row.innerHTML = `<td class="py-2 px-2"><input type="text" value="Nuevo Gasto" class="w-full border rounded px-1 py-0.5 text-xs"></td><td class="py-2 px-2"><input type="number" value="0" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs pres-var"></td><td class="py-2 px-2"><input type="number" value="0" oninput="updateCalculations()" class="w-24 border rounded px-1 py-0.5 text-xs real-var"></td><td class="py-2 px-2 font-bold text-emerald-600 diff-var">$0</td><td class="py-2 px-2 text-center"><button onclick="deleteRow(this)" class="text-red-500 text-xs">❌</button></td>`;
+            }
+            updateCalculations();
+        }
+
+        function addMetaRow() {
+            const tbody = document.getElementById('tablaMetas').getElementsByTagName('tbody')[0];
+            const row = tbody.insertRow();
+            row.innerHTML = `<td class="py-2 px-2"><input type="text" value="Nueva Meta" class="w-full border rounded px-1 py-0.5 text-xs"></td><td class="py-2 px-2"><input type="number" value="100" oninput="updateMetaProgress()" class="w-24 border rounded px-1 py-0.5 text-xs meta-total"></td><td class="py-2 px-2"><input type="number" value="0" oninput="updateMetaProgress()" class="w-24 border rounded px-1 py-0.5 text-xs meta-aportado"></td><td class="py-2 px-2"><div class="flex space-x-1 progress-bars-container"><div class="w-5 h-4 rounded bg-gray-200"></div><div class="w-5 h-4 rounded bg-gray-200"></div><div class="w-5 h-4 rounded bg-gray-200"></div><div class="w-5 h-4 rounded bg-gray-200"></div><div class="w-5 h-4 rounded bg-gray-200"></div><div class="w-5 h-4 rounded bg-gray-200"></div><div class="w-5 h-4 rounded bg-gray-200"></div><div class="w-5 h-4 rounded bg-gray-200"></div><div class="w-5 h-4 rounded bg-gray-200"></div><div class="w-5 h-4 rounded bg-gray-200"></div></div><span class="text-[10px] text-gray-500 font-bold progreso-texto">0% completado</span></td><td class="py-2 px-2 text-center"><button onclick="deleteRow(this)" class="text-red-500 text-xs">❌</button></td>`;
+            updateMetaProgress();
+        }
+
+        function addHistorialRow() {
+            const tbody = document.getElementById('tbodyHistorial');
+            const row = tbody.insertRow();
+            row.innerHTML = `<td class="py-2 px-2"><input type="text" value="Mes Nuevo" class="w-28 border rounded px-1 py-0.5 text-xs h-mes"></td><td class="py-2 px-2"><input type="number" value="0" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-ing"></td><td class="py-2 px-2"><input type="number" value="0" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-gas"></td><td class="py-2 px-2"><input type="number" value="0" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-aho"></td><td class="py-2 px-2"><input type="number" value="36.5" oninput="updateHistorialKPIs()" class="w-20 border rounded px-1 py-0.5 text-xs h-tasa"></td><td class="py-2 px-2 font-bold text-forest h-valusd">$0.00</td><td class="py-2 px-2 text-center"><button onclick="deleteRow(this); updateHistorialKPIs();" class="text-red-500 text-xs">❌</button></td>`;
+            updateHistorialKPIs();
+        }
+
+        function deleteRow(btn) {
+            const row = btn.closest('tr');
+            row.remove();
+            updateCalculations();
+        }
+
+        function updateCalculations() {
+            const ingresoTotal = parseFloat(document.getElementById('ingresoTotal').value) || 0;
+            
+            // 50 / 30 / 20 ideales
+            document.getElementById('valNecesidades').innerText = (ingresoTotal * 0.50).toFixed(2);
+            document.getElementById('valDeseos').innerText = (ingresoTotal * 0.30).toFixed(2);
+            document.getElementById('valAhorro').innerText = (ingresoTotal * 0.20).toFixed(2);
+
+            // Sumar Ingresos Reales
+            let sumIng = 0;
+            document.querySelectorAll('.real-ingreso').forEach(inp => { sumIng += parseFloat(inp.value) || 0; });
+            document.getElementById('sumIngresos').innerText = sumIng.toFixed(2);
+
+            // Sumar Gastos Fijos Reales
+            let sumFijos = 0;
+            document.querySelectorAll('.real-fijo').forEach(inp => { sumFijos += parseFloat(inp.value) || 0; });
+            document.getElementById('realNecesidades').innerText = sumFijos.toFixed(2);
+            const pctFijos = ingresoTotal > 0 ? Math.round((sumFijos / ingresoTotal) * 100) : 0;
+            document.getElementById('pctNecesidades').innerText = pctFijos + '%';
+            if(pctFijos > 50) {
+                document.getElementById('alertaFijos').classList.remove('hidden');
+            } else {
+                document.getElementById('alertaFijos').classList.add('hidden');
+            }
+
+            // Sumar Gastos Variables Reales y Diferencias
+            let sumVar = 0;
+            document.querySelectorAll('.tablaVariables tbody tr').forEach(row => {
+                const pres = parseFloat(row.querySelector('.pres-var').value) || 0;
+                const real = parseFloat(row.querySelector('.real-var').value) || 0;
+                sumVar += real;
+                const diff = pres - real;
+                const diffEl = row.querySelector('.diff-var');
+                diffEl.innerText = (diff >= 0 ? '+' : '') + '$' + diff.toFixed(0);
+                diffEl.className = `py-2 px-2 font-bold diff-var ${diff >= 0 ? 'text-emerald-600' : 'text-red-500'}`;
+            });
+            document.getElementById('realDeseos').innerText = sumVar.toFixed(2);
+            const pctVar = ingresoTotal > 0 ? Math.round((sumVar / ingresoTotal) * 100) : 0;
+            document.getElementById('pctDeseos').innerText = pctVar + '%';
+            if(pctVar > 30) {
+                document.getElementById('alertaVariables').classList.remove('hidden');
+            } else {
+                document.getElementById('alertaVariables').classList.add('hidden');
+            }
+
+            // Ahorro real estimado por diferencia
+            const totalGastos = sumFijos + sumVar;
+            document.getElementById('sumGastos').innerText = totalGastos.toFixed(2);
+            const balance = sumIng - totalGastos;
+            document.getElementById('sumBalance').innerText = (balance >= 0 ? '+' : '') + '$' + balance.toFixed(2);
+            document.getElementById('realAhorro').innerText = (balance > 0 ? balance : 0).toFixed(2);
+        }
+
+        function updateMetaProgress() {
+            document.querySelectorAll('#tablaMetas tbody tr').forEach(row => {
+                const total = parseFloat(row.querySelector('.meta-total').value) || 1;
+                const aportado = parseFloat(row.querySelector('.meta-aportado').value) || 0;
+                let pct = Math.round((aportado / total) * 100);
+                if(pct > 100) pct = 100;
+                const bloquesActivos = Math.round(pct / 10);
+                
+                const containers = row.querySelectorAll('.progress-bars-container div');
+                containers.forEach((div, idx) => {
+                    if(idx < bloquesActivos) {
+                        div.className = 'w-5 h-4 rounded bg-forest';
+                    } else {
+                        div.className = 'w-5 h-4 rounded bg-gray-200';
+                    }
+                });
+                row.querySelector('.progreso-texto').innerText = pct + '% completado';
+            });
+        }
+
+        function updateSuscripciones() {
+            let totalMes = 0;
+            document.querySelectorAll('.sub-input').forEach(inp => { totalMes += parseFloat(inp.value) || 0; });
+            document.getElementById('totalAnualSub').innerText = '$' + (totalMes * 12).toFixed(2);
+        }
+
+        function updateHistorialKPIs() {
+            let totalAhorroNominal = 0;
+            let totalValRealUSD = 0;
+            let primerAhorro = null;
+            let ultimoAhorro = 0;
+            let count = 0;
+
+            document.querySelectorAll('#tbodyHistorial tr').forEach(row => {
+                const aho = parseFloat(row.querySelector('.h-aho').value) || 0;
+                const tasa = parseFloat(row.querySelector('.h-tasa').value) || 1;
+                const valUSD = tasa > 0 ? aho / tasa : 0;
+                row.querySelector('.h-valusd').innerText = '$' + valUSD.toFixed(2);
+
+                totalAhorroNominal += aho;
+                totalValRealUSD += valUSD;
+                ultimoAhorro = aho;
+                if(primerAhorro === null) primerAhorro = aho;
+                count++;
+            });
+
+            document.getElementById('kpiAhorroTotal').innerText = '$' + totalAhorroNominal.toFixed(2);
+            document.getElementById('kpiValReal').innerText = '$' + totalValRealUSD.toFixed(2) + ' USD';
+            document.getElementById('kpiPromedio').innerText = count > 0 ? '$' + (totalAhorroNominal / count).toFixed(2) : '$0';
+
+            let crecimiento = 0;
+            if(primerAhorro && primerAhorro > 0) {
+                crecimiento = Math.round(((ultimoAhorro - primerAhorro) / primerAhorro) * 100);
+            }
+            document.getElementById('kpiCrecimiento').innerText = (crecimiento >= 0 ? '+' : '') + crecimiento + '%';
+
+            renderSVGGraph();
+        }
+
+        function toggleGraphMode(mode) {
+            graphMode = mode;
+            if(mode === 'nominal') {
+                document.getElementById('btnNominal').className = 'px-3 py-1 rounded-lg text-xs font-bold bg-forest text-white';
+                document.getElementById('btnReal').className = 'px-3 py-1 rounded-lg text-xs font-bold bg-gray-200 text-gray-700';
+            } else {
+                document.getElementById('btnReal').className = 'px-3 py-1 rounded-lg text-xs font-bold bg-forest text-white';
+                document.getElementById('btnNominal').className = 'px-3 py-1 rounded-lg text-xs font-bold bg-gray-200 text-gray-700';
+            }
+            renderSVGGraph();
+        }
+
+        function renderSVGGraph() {
+            const container = document.getElementById('svgContainer');
+            container.innerHTML = '';
+            
+            let data = [];
+            document.querySelectorAll('#tbodyHistorial tr').forEach(row => {
+                const mes = row.querySelector('.h-mes').value;
+                const aho = parseFloat(row.querySelector('.h-aho').value) || 0;
+                const tasa = parseFloat(row.querySelector('.h-tasa').value) || 1;
+                const val = graphMode === 'nominal' ? aho : (tasa > 0 ? aho / tasa : 0);
+                data.push({ mes, val });
+            });
+
+            const maxVal = Math.max(...data.map(d => d.val), 10);
+
+            data.forEach(d => {
+                const heightPct = Math.round((d.val / maxVal) * 100);
+                const col = document.createElement('div');
+                col.className = 'flex flex-col items-center flex-1 h-full justify-end';
+                col.innerHTML = `
+                    <span class="text-[10px] font-bold text-gray-600 mb-1">${graphMode === 'nominal' ? '$' + d.val.toFixed(0) : '$' + d.val.toFixed(1)}</span>
+                    <div class="w-full bg-forest rounded-t-lg transition-all duration-300 hover:bg-emerald-700" style="height: ${Math.max(heightPct, 10)}%;"></div>
+                    <span class="text-[10px] text-gray-500 mt-1 truncate w-full text-center">${d.mes}</span>
+                `;
+                container.appendChild(col);
+            });
+        }
+
+        function cerrarMesEnHistorial() {
+            const mes = document.getElementById('mesActual').value;
+            const ing = document.getElementById('sumIngresos').innerText.replace('$', '');
+            const gas = document.getElementById('sumGastos').innerText.replace('$', '');
+            const aho = document.getElementById('realAhorro').innerText;
+            const tasa = document.getElementById('currentRate').value;
+
+            const tbody = document.getElementById('tbodyHistorial');
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td class="py-2 px-2"><input type="text" value="${mes}" class="w-28 border rounded px-1 py-0.5 text-xs h-mes"></td>
+                <td class="py-2 px-2"><input type="number" value="${ing}" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-ing"></td>
+                <td class="py-2 px-2"><input type="number" value="${gas}" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-gas"></td>
+                <td class="py-2 px-2"><input type="number" value="${aho}" oninput="updateHistorialKPIs()" class="w-24 border rounded px-1 py-0.5 text-xs h-aho"></td>
+                <td class="py-2 px-2"><input type="number" value="${tasa}" oninput="updateHistorialKPIs()" class="w-20 border rounded px-1 py-0.5 text-xs h-tasa"></td>
+                <td class="py-2 px-2 font-bold text-forest h-valusd">$0.00</td>
+                <td class="py-2 px-2 text-center"><button onclick="deleteRow(this); updateHistorialKPIs();" class="text-red-500 text-xs">❌</button></td>
+            `;
+            updateHistorialKPIs();
+            alert('¡Mes cerrado y guardado exitosamente en tu Historial con la tasa congelada!');
+            switchTab('historial');
+        }
+
+        function exportBackup() {
+            const state = {
+                mesActual: document.getElementById('mesActual').value,
+                metaPrincipal: document.getElementById('metaPrincipal').value,
+                ingresoTotal: document.getElementById('ingresoTotal').value,
+                currentRate: document.getElementById('currentRate').value,
+                currency: document.getElementById('currencySelect').value
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "tu_plan_financiero_respaldo.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(data.mesActual) document.getElementById('mesActual').value = data.mesActual;
+                    if(data.metaPrincipal) document.getElementById('metaPrincipal').value = data.metaPrincipal;
+                    if(data.ingresoTotal) document.getElementById('ingresoTotal').value = data.ingresoTotal;
+                    if(data.currentRate) document.getElementById('currentRate').value = data.currentRate;
+                    if(data.currency) {
+                        document.getElementById('currencySelect').value = data.currency;
+                        changeCurrency();
+                    }
+                    updateCalculations();
+                    alert('¡Respaldo importado con éxito!');
+                } catch(err) {
+                    alert('El archivo no es válido.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Inicializar cálculos al cargar
+        window.onload = function() {
+            updateCalculations();
+            updateMetaProgress();
+            updateSuscripciones();
+            updateHistorialKPIs();
+        };
+    </script>
+</body>
+</html>
